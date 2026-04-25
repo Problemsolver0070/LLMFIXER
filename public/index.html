@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opto Layer Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-10 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-400">Opto Optimization Layer</h1>
+                <p class="text-slate-400 mt-1">Context-on-Demand Analytics & Token Savings</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-teal-500"></span>
+                </span>
+                <span class="text-sm text-teal-400 font-medium">Proxy Active on Port 8000</span>
+            </div>
+        </header>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10" id="kpi-container">
+            <!-- Populated by JS -->
+        </div>
+
+        <!-- Recent Logs -->
+        <div class="glass rounded-xl p-6">
+            <h2 class="text-xl font-semibold mb-6 text-slate-200">Recent Interceptions</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400 text-sm">
+                            <th class="pb-3 px-4 font-medium">Time</th>
+                            <th class="pb-3 px-4 font-medium">Target Model</th>
+                            <th class="pb-3 px-4 font-medium text-right">Naive Tokens</th>
+                            <th class="pb-3 px-4 font-medium text-right">Opto Tokens</th>
+                            <th class="pb-3 px-4 font-medium text-right">Reduction</th>
+                            <th class="pb-3 px-4 font-medium text-right">Saved ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                renderKPIs(data.totals);
+                renderTable(data.recent);
+            } catch (err) {
+                console.error("Failed to fetch stats", err);
+            }
+        }
+
+        function renderKPIs(totals) {
+            const container = document.getElementById('kpi-container');
+            const totalSavedCents = totals.total_savings_cents || 0;
+            const dollars = (totalSavedCents / 100).toFixed(4);
+            const naive = totals.total_naive_tokens || 1; // avoid / 0
+            const opto = totals.total_optimized_tokens || 0;
+            const reductionPct = Math.max(0, ((naive - opto) / naive) * 100).toFixed(1);
+
+            container.innerHTML = `
+                <div class="glass rounded-xl p-6">
+                    <h3 class="text-slate-400 text-sm font-medium mb-2">Total Requests</h3>
+                    <p class="text-3xl font-bold">${totals.total_requests || 0}</p>
+                </div>
+                <div class="glass rounded-xl p-6">
+                    <h3 class="text-slate-400 text-sm font-medium mb-2">Tokens Prevented</h3>
+                    <p class="text-3xl font-bold text-teal-400">${(totals.total_tokens_saved || 0).toLocaleString()}</p>
+                </div>
+                <div class="glass rounded-xl p-6 relative overflow-hidden">
+                    <h3 class="text-slate-400 text-sm font-medium mb-2">Avg Reduction</h3>
+                    <p class="text-3xl font-bold text-blue-400">${reductionPct}%</p>
+                </div>
+                <div class="glass rounded-xl p-6 border-l-4 border-l-green-500">
+                    <h3 class="text-slate-400 text-sm font-medium mb-2">Estimated Savings</h3>
+                    <p class="text-3xl font-bold text-green-400">$${dollars}</p>
+                </div>
+            `;
+        }
+
+        function renderTable(recent) {
+            const tbody = document.getElementById('logs-table');
+            tbody.innerHTML = '';
+            
+            recent.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-800 hover:bg-slate-800/50 transition-colors";
+                
+                const time = new Date(row.timestamp).toLocaleTimeString();
+                const reduction = Math.max(0, ((row.naive_tokens - row.optimized_tokens) / (row.naive_tokens || 1)) * 100).toFixed(1);
+                const dollars = (row.estimated_savings_cents / 100).toFixed(4);
+
+                tr.innerHTML = `
+                    <td class="py-4 px-4 text-sm text-slate-300">${time}</td>
+                    <td class="py-4 px-4 text-sm"><span class="bg-slate-700 text-slate-300 px-2 py-1 rounded text-xs">${row.model}</span></td>
+                    <td class="py-4 px-4 text-sm text-slate-400 text-right">${row.naive_tokens.toLocaleString()}</td>
+                    <td class="py-4 px-4 text-sm text-blue-300 font-medium text-right">${row.optimized_tokens.toLocaleString()}</td>
+                    <td class="py-4 px-4 text-sm text-teal-400 text-right">${reduction}%</td>
+                    <td class="py-4 px-4 text-sm text-green-400 text-right">+$${dollars}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Fetch immediately and poll every 3 seconds
+        fetchStats();
+        setInterval(fetchStats, 3000);
+    </script>
+</body>
+</html>

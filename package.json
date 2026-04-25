@@ -1,0 +1,29 @@
+{
+  "name": "proxy_layer",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Opto - Model-agnostic LLM optimization proxy (Context-On-Demand)",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.0",
+    "@azure/identity": "^4.5.0",
+    "@azure/keyvault-secrets": "^4.9.0",
+    "@azure/storage-blob": "^12.25.0",
+    "@google/genai": "^1.50.1",
+    "axios": "^1.15.2",
+    "better-sqlite3": "^12.9.0",
+    "body-parser": "^2.2.2",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.5.0",
+    "google-auth-library": "^9.14.1",
+    "pg": "^8.20.0",
+    "uuid": "^14.0.0"
+  }
+}
